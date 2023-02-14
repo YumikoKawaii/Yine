@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/YumikoKawaii/Yine/pkg/config"
+	"github.com/YumikoKawaii/Yine/pkg/utils"
 	"gorm.io/gorm"
 )
 
@@ -57,4 +58,20 @@ func UpdateUserInfo(Id string, newInfo PersonalInfo) {
 	db.Exec("set sql_safe_updates = 0")
 	db.Exec("update personal_infos set username = ?, birthday = ?, address = ?, gender = ?, hobbies = ? where id = ?", data.Username, data.Birthday, data.Address, data.Gender, data.Hobbies, Id)
 	db.Exec("set sql_safe_updates = 1")
+}
+
+func GetUserInfo(Id string) PersonalInfo {
+
+	data := PersonalInfo{}
+
+	db.Raw("select username, birthday, address, gender, hobbies where id = ?", Id).Scan(&data)
+
+	data.Username, _ = utils.DecryptData(data.Username)
+	data.Birthday, _ = utils.DecryptData(data.Birthday)
+	data.Address, _ = utils.DecryptData(data.Address)
+	data.Gender, _ = utils.DecryptData(data.Gender)
+	data.Hobbies, _ = utils.DecryptData(data.Hobbies)
+
+	return data
+
 }

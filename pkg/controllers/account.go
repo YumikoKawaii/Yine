@@ -7,6 +7,7 @@ import (
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
+	"github.com/gorilla/mux"
 )
 
 var Account models.Account
@@ -53,43 +54,41 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newAccount := &models.Account{}
-	newAccount.Email = utils.Hashing(newAccountInfo.Email)
+	newAccount.Email = newAccountInfo.Email
 
-	if !models.IsExist(newAccount.Email) {
+	if !models.ValidEmail(newAccount.Email) {
 
 		newAccount.Password = utils.Hashing(newAccountInfo.Password)
-		newAccount.ID = utils.Hashing(newAccount.Email)
+		newAccount.ID = utils.Hashing(newAccount.Email + utils.RandomStringRunes(10))
+		models.CreateSession(newAccount.ID)
 		newAccount.CreateAccount()
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "Created successfully")
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, newAccount.ID)
+		models.CreateEmptyRecord(newAccount.ID)
 		return
 
 	} else {
 
 		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Email existed")
 		return
+
 	}
 
 }
 
 func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
-	accountInfo := &struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}{}
+	vars := mux.Vars(r)
+	id := vars["id"]
+	password := r.Header.Get("password")
 
-	utils.ParseBody(r, accountInfo)
-
-	accountInfo.Email = utils.Hashing(accountInfo.Email)
-	accountInfo.Password = utils.Hashing(accountInfo.Password)
-
-	if models.IsExist(accountInfo.Email) {
-		if models.VerifyAccount(accountInfo.Email, accountInfo.Password) {
-			models.DeleteAccount(accountInfo.Email)
+	if models.IsExist(id) {
+		if models.VerifyPassword(id, password) {
+			models.DeleteAccount(id)
 			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "Deleted")
 		} else {
 			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Wrong Password")
 		}
+
 	} else {
 		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Account is not exist")
 	}
@@ -98,32 +97,25 @@ func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 func UpdateAccount(w http.ResponseWriter, r *http.Request) {
 
-	accountInfo := &struct {
-		Email       string `json:"email"`
-		OldPassword string `json:"oldpassword"`
-		NewPassword string `json:"newpassword"`
+	vars := mux.Vars(r)
+	id := vars["id"]
+	password := r.Header.Get("password")
+
+	n := &struct {
+		Password string `json:"nPassword"`
 	}{}
 
-	utils.ParseBody(r, accountInfo)
+	utils.ParseBody(r, n)
 
-	accountInfo.Email = utils.Hashing(accountInfo.Email)
-	accountInfo.OldPassword = utils.Hashing(accountInfo.OldPassword)
-
-	if models.IsExist(accountInfo.Email) {
-		if models.VerifyAccount(accountInfo.Email, accountInfo.OldPassword) {
-
-			if !verifyPassword(accountInfo.NewPassword) {
-				utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "New Password is invalid")
-			} else {
-				models.UpdateAccount(accountInfo.Email, utils.Hashing(accountInfo.NewPassword))
-				utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "Password updated")
-			}
-
+	if models.VerifyPassword(id, password) {
+		if verifyPassword(n.Password) {
+			models.UpdateAccount(id, n.Password)
+			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "Succesfully")
 		} else {
-			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Wrong Password")
+			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "New Password is not valid")
 		}
 	} else {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Account is not exist")
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Wrong Password")
 	}
 
 }

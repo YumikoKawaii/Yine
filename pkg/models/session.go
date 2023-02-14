@@ -32,7 +32,7 @@ func CreateSession(ID string) {
 
 }
 
-func ValidSession(ID string, Password string, key string) bool {
+func VerifySession(ID string, key string) bool {
 
 	var e string = ""
 	db.Raw("select expired from sessions where id = ? and session = ?", ID, key).Scan(&e)
@@ -43,14 +43,6 @@ func ValidSession(ID string, Password string, key string) bool {
 
 	date, _ := time.Parse(utils.TimeFormat, e)
 
-	if time.Now().After(date) {
-		return false
-	}
-
-	p := utils.Hashing(Password)
-	var data string = ""
-	db.Raw("select id from accounts where id = ? and password = ?", ID, p).Scan(&data)
-
-	return data != ""
+	return time.Now().Before(date)
 
 }

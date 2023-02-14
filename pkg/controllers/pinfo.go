@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	_ "fmt"
 	"net/http"
 	_ "net/mail"
@@ -18,7 +19,8 @@ func UpdateUserInfo(w http.ResponseWriter, r *http.Request) {
 	session := r.Header.Get("session")
 	id := r.URL.Query().Get("id")
 
-	pw, ex := models.ValidSession(id, password, session)
+	pw := models.VerifyPassword(id, password)
+	ex := models.VerifySession(id, session)
 
 	if !ex {
 		utils.ResponseWriter(w, "Content-Type", "application-json", http.StatusInternalServerError, "Invalid Request")
@@ -32,23 +34,23 @@ func UpdateUserInfo(w http.ResponseWriter, r *http.Request) {
 	utils.ParseBody(r, &rawUserInfo)
 
 	if rawUserInfo.Username != "" {
-		rawUserInfo.Username = utils.Hashing(rawUserInfo.Username)
+		rawUserInfo.Username, _ = utils.EncryptData(rawUserInfo.Username)
 	}
 
 	if rawUserInfo.Birthday != "" {
-		rawUserInfo.Birthday = utils.Hashing(rawUserInfo.Birthday)
+		rawUserInfo.Birthday, _ = utils.EncryptData(rawUserInfo.Birthday)
 	}
 
 	if rawUserInfo.Address != "" {
-		rawUserInfo.Address = utils.Hashing(rawUserInfo.Address)
+		rawUserInfo.Address, _ = utils.EncryptData(rawUserInfo.Address)
 	}
 
 	if rawUserInfo.Gender != "" {
-		rawUserInfo.Gender = utils.Hashing(rawUserInfo.Gender)
+		rawUserInfo.Gender, _ = utils.EncryptData(rawUserInfo.Gender)
 	}
 
 	if rawUserInfo.Hobbies != "" {
-		rawUserInfo.Hobbies = utils.Hashing(rawUserInfo.Hobbies)
+		rawUserInfo.Hobbies, _ = utils.EncryptData(rawUserInfo.Hobbies)
 	}
 
 	models.UpdateUserInfo(id, rawUserInfo)
@@ -59,6 +61,19 @@ func UpdateUserInfo(w http.ResponseWriter, r *http.Request) {
 
 func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 
-	//Waiting for encrypt function
+	session := r.Header.Get("session")
+	id := r.URL.Query().Get("id")
+
+	if models.VerifySession(id, session) {
+
+		data := models.GetUserInfo(id)
+		res, _ := json.Marshal(data)
+		w.Header().Set("Content-Type", "application-json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(res)
+
+	} else {
+		utils.ResponseWriter(w, "Content-Type", "application-json", http.StatusOK, "Invalid Request")
+	}
 
 }

@@ -10,9 +10,9 @@ var db *gorm.DB
 
 type Account struct {
 	gorm.Model
+	ID       string `json:"id"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	ID       string `json:"id"`
 }
 
 func init() {
@@ -26,10 +26,16 @@ func (a *Account) CreateAccount() *Account {
 	return a
 }
 
-func IsExist(Email string) bool {
+func ValidEmail(email string) bool {
+	r := Account{}
+	db.Raw("select * from accounts where email = ?", email).Scan(&r)
+	return r != Account{}
+}
+
+func IsExist(id string) bool {
 
 	r := Account{}
-	db.Raw("select id from accounts where email = ?", Email).Scan(&r)
+	db.Raw("select * from accounts where id = ?", id).Scan(&r)
 	return r != Account{}
 
 }
@@ -42,14 +48,25 @@ func VerifyAccount(Email string, Password string) bool {
 
 }
 
-func DeleteAccount(Email string) {
+func DeleteAccount(id string) {
 
-	db.Exec("delete from accounts where id = ?", utils.Hashing(Email))
+	db.Exec("delete from accounts where id = ?", id)
 
 }
 
-func UpdateAccount(Email string, NewPassword string) {
+func UpdateAccount(id string, new_password string) {
 	db.Exec("set sql_safe_updates = 0")
-	db.Exec("update accounts set password = ? where email = ?", NewPassword, Email)
+	db.Exec("update accounts set password = ? where id = ?", utils.Hashing(new_password), id)
 	db.Exec("set sql_safe_updates = 1")
+}
+
+func VerifyPassword(Id string, password string) bool {
+
+	r := &struct {
+		Password string `json:"password"`
+	}{}
+	db.Raw("select password from accounts where id = ?", Id).Scan(&r)
+
+	return utils.Hashing(password) == r.Password
+
 }

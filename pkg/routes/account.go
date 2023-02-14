@@ -8,6 +8,6 @@ import (
 var RegisterAccountRoutes = func(router *mux.Router) {
 	router.HandleFunc("/account/", controllers.CreateAccount).Methods("POST")
 	//router.HandleFunc("/account/", controllers.UserLogin).Methods("GET")
-	router.HandleFunc("/account/", controllers.UpdateAccount).Methods("PUT")
-	router.HandleFunc("/account/", controllers.DeleteAccount).Methods("DELETE")
+	router.HandleFunc("/account/{id}", controllers.UpdateAccount).Methods("PUT")
+	router.HandleFunc("/account/{id}", controllers.DeleteAccount).Methods("DELETE")
 }
