@@ -5,12 +5,10 @@ import (
 
 	"github.com/YumikoKawaii/Yine/pkg/config"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
-	"gorm.io/gorm"
 )
 
 type Session struct {
-	gorm.Model
-	ID      string `json:"id"`
+	ID      string `json:"id" gorm:"primarykey"`
 	Session string `json:"session"`
 	Expired string `json:"expired"`
 }

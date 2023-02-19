@@ -1,19 +1,20 @@
 package models
 
 import (
+	"time"
+
 	"github.com/YumikoKawaii/Yine/pkg/config"
-	"github.com/YumikoKawaii/Yine/pkg/utils"
-	"gorm.io/gorm"
 )
 
 type PersonalInfo struct {
-	gorm.Model
-	ID       string `json:"ID"`
-	Username string `json:"Username"`
-	Birthday string `json:"Birthday"`
-	Address  string `json:"Address"`
-	Gender   string `json:"Gender"`
-	Hobbies  string `json:"Hobbies"`
+	ID        string `json:"id" gorm:"primarykey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Username  string `json:"Username"`
+	Birthday  string `json:"Birthday"`
+	Address   string `json:"Address"`
+	Gender    string `json:"Gender"`
+	Hobbies   string `json:"Hobbies"`
 }
 
 func init() {
@@ -26,6 +27,8 @@ func CreateEmptyRecord(ID string) {
 
 	newRecord := &PersonalInfo{}
 	newRecord.ID = ID
+	newRecord.CreatedAt = time.Now()
+	newRecord.UpdatedAt = time.Now()
 	db.Create(newRecord)
 
 }
@@ -55,8 +58,10 @@ func UpdateUserInfo(Id string, newInfo PersonalInfo) {
 		data.Hobbies = newInfo.Hobbies
 	}
 
+	data.UpdatedAt = time.Now()
+
 	db.Exec("set sql_safe_updates = 0")
-	db.Exec("update personal_infos set username = ?, birthday = ?, address = ?, gender = ?, hobbies = ? where id = ?", data.Username, data.Birthday, data.Address, data.Gender, data.Hobbies, Id)
+	db.Exec("update personal_infos set updated_at = ?, username = ?, birthday = ?, address = ?, gender = ?, hobbies = ? where id = ?", data.UpdatedAt, data.Username, data.Birthday, data.Address, data.Gender, data.Hobbies, Id)
 	db.Exec("set sql_safe_updates = 1")
 }
 
@@ -65,12 +70,6 @@ func GetUserInfo(Id string) PersonalInfo {
 	data := PersonalInfo{}
 
 	db.Raw("select username, birthday, address, gender, hobbies where id = ?", Id).Scan(&data)
-
-	data.Username, _ = utils.DecryptData(data.Username)
-	data.Birthday, _ = utils.DecryptData(data.Birthday)
-	data.Address, _ = utils.DecryptData(data.Address)
-	data.Gender, _ = utils.DecryptData(data.Gender)
-	data.Hobbies, _ = utils.DecryptData(data.Hobbies)
 
 	return data
 

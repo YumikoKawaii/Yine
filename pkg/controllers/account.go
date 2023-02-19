@@ -3,11 +3,11 @@ package controllers
 import (
 	"net/http"
 	"net/mail"
+	"time"
 	"unicode"
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
-	"github.com/gorilla/mux"
 )
 
 var Account models.Account
@@ -53,13 +53,14 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newAccount := &models.Account{}
-	newAccount.Email = newAccountInfo.Email
+	if !models.IsEmailExist(newAccountInfo.Email) {
 
-	if !models.ValidEmail(newAccount.Email) {
-
+		newAccount := &models.Account{}
+		newAccount.Email = newAccountInfo.Email
 		newAccount.Password = utils.Hashing(newAccountInfo.Password)
 		newAccount.ID = utils.Hashing(newAccount.Email + utils.RandomStringRunes(10))
+		newAccount.CreatedAt = time.Now()
+		newAccount.UpdatedAt = time.Now()
 		models.CreateSession(newAccount.ID)
 		newAccount.CreateAccount()
 		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, newAccount.ID)
@@ -77,8 +78,7 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 
 func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := r.Header.Get("id")
 	password := r.Header.Get("password")
 
 	if models.IsExist(id) {
@@ -97,8 +97,7 @@ func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 func UpdateAccount(w http.ResponseWriter, r *http.Request) {
 
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id := r.Header.Get("id")
 	password := r.Header.Get("password")
 
 	n := &struct {
@@ -112,7 +111,7 @@ func UpdateAccount(w http.ResponseWriter, r *http.Request) {
 			models.UpdateAccount(id, n.Password)
 			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "Succesfully")
 		} else {
-			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "New Password is not valid")
+			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "New Password is invalid")
 		}
 	} else {
 		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Wrong Password")

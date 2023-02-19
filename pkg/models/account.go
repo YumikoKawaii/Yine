@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/YumikoKawaii/Yine/pkg/config"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
 	"gorm.io/gorm"
@@ -9,10 +11,11 @@ import (
 var db *gorm.DB
 
 type Account struct {
-	gorm.Model
-	ID       string `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	ID        string `json:"id" gorm:"primarykey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 func init() {
@@ -26,7 +29,7 @@ func (a *Account) CreateAccount() *Account {
 	return a
 }
 
-func ValidEmail(email string) bool {
+func IsEmailExist(email string) bool {
 	r := Account{}
 	db.Raw("select * from accounts where email = ?", email).Scan(&r)
 	return r != Account{}
@@ -57,6 +60,7 @@ func DeleteAccount(id string) {
 func UpdateAccount(id string, new_password string) {
 	db.Exec("set sql_safe_updates = 0")
 	db.Exec("update accounts set password = ? where id = ?", utils.Hashing(new_password), id)
+	db.Exec("update accounts set updated_at = ? where id = ?", time.Now(), id)
 	db.Exec("set sql_safe_updates = 1")
 }
 
