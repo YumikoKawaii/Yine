@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/mail"
 	"time"
@@ -36,35 +37,51 @@ func verifyPassword(p string) bool {
 
 func CreateAccount(w http.ResponseWriter, r *http.Request) {
 
-	newAccountInfo := &struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}{}
+	err := r.ParseForm()
 
-	utils.ParseBody(r, newAccountInfo)
+	if err != nil {
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
+		return
+	}
 
-	if _, err := mail.ParseAddress(newAccountInfo.Email); err != nil {
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
+
+	if _, err := mail.ParseAddress(email); err != nil {
 		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Invalid Email")
 		return
 	}
 
-	if !verifyPassword(newAccountInfo.Password) {
+	if !verifyPassword(password) {
 		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Invalid Password")
 		return
 	}
 
-	if !models.IsEmailExist(newAccountInfo.Email) {
+	if !models.IsEmailExist(email) {
 
-		newAccount := &models.Account{}
-		newAccount.Email = newAccountInfo.Email
-		newAccount.Password = utils.Hashing(newAccountInfo.Password)
-		newAccount.ID = utils.Hashing(newAccount.Email + utils.RandomStringRunes(10))
-		newAccount.CreatedAt = time.Now()
-		newAccount.UpdatedAt = time.Now()
+		newAccount := &models.Account{
+
+			ID:        utils.Hashing(email + utils.RandomStringRunes(10)),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Email:     email,
+			Password:  utils.Hashing(password),
+		}
+
 		models.CreateSession(newAccount.ID)
 		newAccount.CreateAccount()
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, newAccount.ID)
 		models.CreateEmptyRecord(newAccount.ID)
+
+		resInfo := struct {
+			ID      string `json:"id"`
+			Session string `json:"session"`
+		}{ID: newAccount.ID, Session: models.GetSession(newAccount.ID)}
+
+		res, _ := json.Marshal(resInfo)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(res)
+
 		return
 
 	} else {
@@ -76,45 +93,99 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func DeleteAccount(w http.ResponseWriter, r *http.Request) {
+func Login(w http.ResponseWriter, r *http.Request) {
+
+	err := r.ParseForm()
+
+	if err != nil {
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
+		return
+	}
+
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
+
+	if !models.IsEmailExist(email) {
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Account is not exist")
+		return
+	}
+
+	if !models.VerifyAccount(email, password) {
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Wrong password")
+		return
+	}
+
+	//Wait until complete other features!
+
+}
+
+func ChangeEmail(w http.ResponseWriter, r *http.Request) {
+
+	err := r.ParseForm()
+
+	if err != nil {
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
+		return
+	}
 
 	id := r.Header.Get("id")
-	password := r.Header.Get("password")
+	session := r.Header.Get("session")
 
-	if models.IsExist(id) {
-		if models.VerifyPassword(id, password) {
-			models.DeleteAccount(id)
-			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "Deleted")
-		} else {
-			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Wrong Password")
-		}
+	new_email := r.Form.Get("email")
+
+	if _, err := mail.ParseAddress(new_email); err != nil {
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Invalid Email")
+		return
+	}
+
+	if models.VerifySession(id, session) {
+
+		models.UpdateEmail(id, new_email)
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "")
 
 	} else {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Account is not exist")
+
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
+
 	}
 
 }
 
-func UpdateAccount(w http.ResponseWriter, r *http.Request) {
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+
+	err := r.ParseForm()
+
+	if err != nil {
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
+		return
+	}
 
 	id := r.Header.Get("id")
-	password := r.Header.Get("password")
 
-	n := &struct {
-		Password string `json:"nPassword"`
-	}{}
+	old_password := r.Form.Get("old_password")
+	new_password := r.Form.Get("new_password")
 
-	utils.ParseBody(r, n)
-
-	if models.VerifyPassword(id, password) {
-		if verifyPassword(n.Password) {
-			models.UpdateAccount(id, n.Password)
-			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "Succesfully")
-		} else {
-			utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "New Password is invalid")
-		}
-	} else {
+	if !models.VerifyPassword(id, old_password) {
 		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Wrong Password")
+		return
 	}
+
+	if !verifyPassword(new_password) {
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Invalid Password")
+		return
+	}
+
+	models.UpdatePassword(id, new_password)
+	utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "")
+
+}
+
+func ChangeId(w http.ResponseWriter, r *http.Request) {
+	//Wait until complete other features!
+}
+
+func DeleteAccount(w http.ResponseWriter, r *http.Request) {
+
+	//Wait until complete other features!
 
 }

@@ -35,7 +35,7 @@ func IsEmailExist(email string) bool {
 	return r != Account{}
 }
 
-func IsExist(id string) bool {
+func IsIdExist(id string) bool {
 
 	r := Account{}
 	db.Raw("select * from accounts where id = ?", id).Scan(&r)
@@ -43,34 +43,43 @@ func IsExist(id string) bool {
 
 }
 
-func VerifyAccount(Email string, Password string) bool {
+func VerifyAccount(email string, password string) bool {
 
-	r := Account{}
-	db.Raw("select email, password from accounts where email = ?", Email).Scan(&r)
-	return Password == r.Password
+	var p string = ""
+	db.Raw("select password from accounts where email = ?", email).Scan(&p)
+	return p == utils.Hashing(password)
+
+}
+
+func UpdateEmail(id string, new_email string) {
+
+	db.Exec("set sql_safe_updates = 0")
+	db.Exec("update accounts set email = ? where id = ?", new_email, id)
+	db.Exec("update accounts set updated_at = ? where id = ?", time.Now(), id)
+	db.Exec("set sql_safe_updates = 1")
+
+}
+
+func UpdatePassword(id string, new_password string) {
+
+	db.Exec("set sql_safe_updates = 0")
+	db.Exec("update accounts set password = ? where id = ?", utils.Hashing(new_password), id)
+	db.Exec("update accounts set updated_at = ? where id = ?", time.Now(), id)
+	db.Exec("set sql_safe_updates = 1")
+
+}
+
+func VerifyPassword(Id string, password string) bool {
+
+	var p string = ""
+	db.Raw("select password from accounts where id = ?", Id).Scan(&p)
+
+	return p == utils.Hashing(password)
 
 }
 
 func DeleteAccount(id string) {
 
-	db.Exec("delete from accounts where id = ?", id)
-
-}
-
-func UpdateAccount(id string, new_password string) {
-	db.Exec("set sql_safe_updates = 0")
-	db.Exec("update accounts set password = ? where id = ?", utils.Hashing(new_password), id)
-	db.Exec("update accounts set updated_at = ? where id = ?", time.Now(), id)
-	db.Exec("set sql_safe_updates = 1")
-}
-
-func VerifyPassword(Id string, password string) bool {
-
-	r := &struct {
-		Password string `json:"password"`
-	}{}
-	db.Raw("select password from accounts where id = ?", Id).Scan(&r)
-
-	return utils.Hashing(password) == r.Password
+	//Wait until complete other features!
 
 }
