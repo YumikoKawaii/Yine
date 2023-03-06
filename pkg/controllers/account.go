@@ -40,7 +40,7 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 
 	if err != nil {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -48,12 +48,12 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 	password := r.Form.Get("password")
 
 	if _, err := mail.ParseAddress(email); err != nil {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Invalid Email")
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusNotAcceptable, "Email")
 		return
 	}
 
 	if !verifyPassword(password) {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Invalid Password")
+		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusNotAcceptable, "Password")
 		return
 	}
 
@@ -86,7 +86,7 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Email existed")
+		w.WriteHeader(http.StatusConflict)
 		return
 
 	}
@@ -121,62 +121,65 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 func ChangeEmail(w http.ResponseWriter, r *http.Request) {
 
+	id := r.Header.Get("id")
+	session := r.Header.Get("session")
+
+	if !models.VerifySession(id, session) {
+
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+
+	}
+
 	err := r.ParseForm()
 
 	if err != nil {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
-		return
-	}
 
-	id := r.Header.Get("id")
-	session := r.Header.Get("session")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+
+	}
 
 	new_email := r.Form.Get("email")
 
 	if _, err := mail.ParseAddress(new_email); err != nil {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Invalid Email")
+
+		w.WriteHeader(http.StatusNotAcceptable)
 		return
-	}
-
-	if models.VerifySession(id, session) {
-
-		models.UpdateEmail(id, new_email)
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "")
-
-	} else {
-
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
 
 	}
+
+	models.UpdateEmail(id, new_email)
+	w.WriteHeader(http.StatusOK)
 
 }
 
 func ChangePassword(w http.ResponseWriter, r *http.Request) {
 
+	id := r.Header.Get("id")
+
 	err := r.ParseForm()
 
 	if err != nil {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Unidentified")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	id := r.Header.Get("id")
 
 	old_password := r.Form.Get("old_password")
 	new_password := r.Form.Get("new_password")
 
 	if !models.VerifyPassword(id, old_password) {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Wrong Password")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	if !verifyPassword(new_password) {
-		utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusInternalServerError, "Invalid Password")
+		w.WriteHeader(http.StatusNotAcceptable)
 		return
 	}
 
 	models.UpdatePassword(id, new_password)
-	utils.ResponseWriter(w, "Content-Type", "application/json", http.StatusOK, "")
+	w.WriteHeader(http.StatusOK)
 
 }
 
