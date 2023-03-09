@@ -5,6 +5,7 @@ import (
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
 	"github.com/YumikoKawaii/Yine/pkg/security"
+	"github.com/YumikoKawaii/Yine/pkg/utils"
 )
 
 var Relationship models.Relationship
@@ -24,6 +25,11 @@ func SentRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	guest := r.Form.Get("guest")
+
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	Relationship.ProcessRequest(id, guest)
 	w.WriteHeader(http.StatusOK)
@@ -46,8 +52,12 @@ func AcceptRequest(w http.ResponseWriter, r *http.Request) {
 
 	guest := r.Form.Get("guest")
 
-	Relationship.AcceptRequest(id, guest)
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
+	Relationship.AcceptRequest(id, guest)
 }
 
 func RejectRequest(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +75,10 @@ func RejectRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	guest := r.Form.Get("guest")
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	Relationship.CancelStatus(id, guest)
 
@@ -85,26 +99,39 @@ func ModifyRelationship(w http.ResponseWriter, r *http.Request) {
 	}
 
 	guest := r.Form.Get("guest")
+
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	request := r.Form.Get("request")
+
+	relationship := Relationship.GetRelationship(id, guest)
 
 	switch request {
 	case "block":
-		if Relationship.GetRelationship(id, guest) == "be blocked" {
+		if relationship == utils.BeBlocked {
 			w.WriteHeader(http.StatusNotAcceptable)
 			return
 		}
 		Relationship.Block(id, guest)
 		w.WriteHeader(http.StatusOK)
 	case "unblock":
-		if Relationship.GetRelationship(id, guest) != "blocked" {
+		if relationship != utils.Block {
 			w.WriteHeader(http.StatusNotAcceptable)
 			return
 		}
 		Relationship.CancelStatus(id, guest)
 		w.WriteHeader(http.StatusOK)
 	case "unfriend":
-		Relationship.CancelStatus(id, guest)
-		w.WriteHeader(http.StatusOK)
+		if relationship == utils.Friend {
+			Relationship.CancelStatus(id, guest)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusNotAcceptable)
+
 	}
 
 }
