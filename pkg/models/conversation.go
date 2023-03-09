@@ -65,3 +65,12 @@ func (c Conversation) RemoveConversation(coid string) {
 	db.Exec("delete from conversations where co_id = ?", coid)
 
 }
+
+func (c Conversation) IsConversationExist(coid string) bool {
+
+	result := ""
+
+	db.Raw("select co_id from conversations where co_id = ?", coid).Scan(&result)
+
+	return result == ""
+}

@@ -27,6 +27,16 @@ func ChangeNickname(w http.ResponseWriter, r *http.Request) {
 	}
 
 	coid := r.Form.Get("coid")
+	if !Conversation.IsConversationExist(coid) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if Conversation.GetRole(coid, id) == "" {
+		w.WriteHeader(http.StatusNotAcceptable)
+		return
+	}
+
 	nickname := r.Form.Get("nickname")
 
 	Conversation.ChangeNickname(coid, id, nickname)
@@ -48,6 +58,10 @@ func NewChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	guest := r.Form.Get("guest")
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	relationship := Relationship.GetRelationship(id, guest)
 
@@ -107,8 +121,19 @@ func AddMemeber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guest := r.Form.Get("guest")
 	gid := r.Form.Get("gid")
+	if !Conversation.IsConversationExist(gid) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Conversation"))
+		return
+	}
+
+	guest := r.Form.Get("guest")
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("ID"))
+		return
+	}
 
 	if Conversation.GetRole(gid, id) != "Admin" {
 		w.WriteHeader(http.StatusNotAcceptable)
@@ -133,7 +158,19 @@ func ChangeMemberRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gid := r.Form.Get("gid")
+	if !Conversation.IsConversationExist(gid) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Conversation"))
+		return
+	}
+
 	guest := r.Form.Get("guest")
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("ID"))
+		return
+	}
+
 	role := r.Form.Get("role")
 
 	if Conversation.GetRole(gid, id) == "Admin" {
@@ -161,6 +198,12 @@ func ChangeGroupName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gid := r.Form.Get("gid")
+	if !Conversation.IsConversationExist(gid) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Conversation"))
+		return
+	}
+
 	name := r.Form.Get("name")
 
 	if Conversation.GetRole(gid, id) == "" {
@@ -183,6 +226,11 @@ func ChangeGroupAvatar(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(0)
 
 	gid := r.FormValue("gid")
+	if !Conversation.IsConversationExist(gid) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Conversation"))
+		return
+	}
 
 	if Conversation.GetRole(gid, id) == "" {
 		w.WriteHeader(http.StatusNotAcceptable)
@@ -215,7 +263,18 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gid := r.Form.Get("gid")
+	if !Conversation.IsConversationExist(gid) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Conversation"))
+		return
+	}
+
 	guest := r.Form.Get("guest")
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("ID"))
+		return
+	}
 
 	if Conversation.GetRole(gid, id) != "Admin" {
 		w.WriteHeader(http.StatusNotAcceptable)
@@ -229,25 +288,6 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 
 func DeleteGroup(w http.ResponseWriter, r *http.Request) {
 
-	id := security.Authorize(w, r)
-	if id == "" {
-		return
-	}
-
-	err := r.ParseForm()
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	gid := r.Form.Get("gid")
-
-	if Conversation.GetRole(gid, id) != "Admin" {
-		w.WriteHeader(http.StatusNotAcceptable)
-		return
-	}
-
-	Conversation.RemoveConversation(gid)
-	w.WriteHeader(http.StatusOK)
+	//Temporary unavailable
 
 }
