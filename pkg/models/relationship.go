@@ -1,6 +1,8 @@
 package models
 
-import "github.com/YumikoKawaii/Yine/pkg/config"
+import (
+	"github.com/YumikoKawaii/Yine/pkg/config"
+)
 
 type Relationship struct {
 	ID     string `json:"id" gorm:"primarykey"`
@@ -14,7 +16,7 @@ func init() {
 	db.AutoMigrate(&Relationship{})
 }
 
-func GetRelationship(id string, guest string) string {
+func (r Relationship) GetRelationship(id string, guest string) string {
 
 	var result string = ""
 	db.Raw("select status from relationships where id = ? and guest = ?", id, guest).Scan(&result)
@@ -22,7 +24,7 @@ func GetRelationship(id string, guest string) string {
 
 }
 
-func ProcessRequest(id string, guest string) {
+func (r Relationship) ProcessRequest(id string, guest string) {
 
 	i_record := &Relationship{
 		ID:     id,
@@ -41,42 +43,30 @@ func ProcessRequest(id string, guest string) {
 
 }
 
-func AcceptRequest(id string, guest string) {
+func (r Relationship) AcceptRequest(id string, guest string) {
 
-	db.Exec("set sql_safe_updates = 0")
 	db.Exec("update relationships set status = friend where id = ? and guest = ?", id, guest)
 	db.Exec("update relationships set status = friend where id = ? and guest = ?", guest, id)
-	db.Exec("set sql_safe_updates = 1")
 
 }
 
-func CancelStatus(id string, guest string) {
+func (r Relationship) CancelStatus(id string, guest string) {
 
-	db.Exec("set sql_safe_updates = 0")
 	db.Exec("delete from relationships where id = ? and guest = ?", id, guest)
 	db.Exec("delete from relationships where id = ? and guest = ?", guest, id)
-	db.Exec("set sql_safe_updates = 1")
 
 }
 
-func CancelAllStatus(id string) {
+func (r Relationship) CancelAllStatus(id string) {
 
-	db.Exec("set sql_safe_updates = 0")
 	db.Exec("delete from relationships where id = ?", id)
 	db.Exec("delete from relationships where guest = ?", id)
-	db.Exec("set sql_safe_updates = 1")
 
 }
 
-func Block(id string, guest string) {
+func (r Relationship) Block(id string, guest string) {
 
-	if GetRelationship(id, guest) == "" {
-		ProcessRequest(id, guest)
-	}
-
-	db.Exec("set sql_safe_updates = 0")
 	db.Exec("update relationships set status = blocked where id = ? and guest = ?", id, guest)
-	db.Exec("update relationships set status = "+" be blocked"+" where id = ? and guest = ?", guest, id)
-	db.Exec("set sql_safe_updates = 1")
+	db.Exec("update relationships set status = "+"be blocked"+" where id = ? and guest = ?", guest, id)
 
 }

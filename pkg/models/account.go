@@ -24,18 +24,27 @@ func init() {
 	db.AutoMigrate(&Account{})
 }
 
-func (a *Account) CreateAccount() *Account {
-	db.Create(&a)
-	return a
+func (a Account) CreateAccount(id string, email string, password string) {
+
+	newRecord := Account{
+		ID:        id,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Email:     email,
+		Password:  password,
+	}
+
+	db.Create(&newRecord)
+
 }
 
-func IsEmailExist(email string) bool {
+func (a Account) IsEmailExist(email string) bool {
 	r := Account{}
 	db.Raw("select * from accounts where email = ?", email).Scan(&r)
 	return r != Account{}
 }
 
-func IsIdExist(id string) bool {
+func (a Account) IsIdExist(id string) bool {
 
 	r := Account{}
 	db.Raw("select * from accounts where id = ?", id).Scan(&r)
@@ -43,7 +52,7 @@ func IsIdExist(id string) bool {
 
 }
 
-func VerifyAccount(email string, password string) bool {
+func (a Account) VerifyAccount(email string, password string) bool {
 
 	var p string = ""
 	db.Raw("select password from accounts where email = ?", email).Scan(&p)
@@ -51,25 +60,19 @@ func VerifyAccount(email string, password string) bool {
 
 }
 
-func UpdateEmail(id string, new_email string) {
+func (a Account) UpdateEmail(id string, new_email string) {
 
-	db.Exec("set sql_safe_updates = 0")
 	db.Exec("update accounts set email = ? where id = ?", new_email, id)
-	db.Exec("update accounts set updated_at = ? where id = ?", time.Now(), id)
-	db.Exec("set sql_safe_updates = 1")
 
 }
 
-func UpdatePassword(id string, new_password string) {
+func (a Account) UpdatePassword(id string, new_password string) {
 
-	db.Exec("set sql_safe_updates = 0")
 	db.Exec("update accounts set password = ? where id = ?", utils.Hashing(new_password), id)
-	db.Exec("update accounts set updated_at = ? where id = ?", time.Now(), id)
-	db.Exec("set sql_safe_updates = 1")
 
 }
 
-func VerifyPassword(Id string, password string) bool {
+func (a Account) VerifyPassword(Id string, password string) bool {
 
 	var p string = ""
 	db.Raw("select password from accounts where id = ?", Id).Scan(&p)
@@ -78,7 +81,7 @@ func VerifyPassword(Id string, password string) bool {
 
 }
 
-func DeleteAccount(id string) {
+func (a Account) DeleteAccount(id string) {
 
 	//Wait until complete other features!
 

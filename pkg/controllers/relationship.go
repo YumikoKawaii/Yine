@@ -4,50 +4,83 @@ import (
 	"net/http"
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
+	"github.com/YumikoKawaii/Yine/pkg/security"
 )
 
 var Relationship models.Relationship
 
 func SentRequest(w http.ResponseWriter, r *http.Request) {
 
-	id := r.Header.Get("id")
-	session := r.Header.Get("session")
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
 
-	if !models.VerifySession(id, session) {
-		w.WriteHeader(http.StatusUnauthorized)
+	err := r.ParseForm()
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	guest := r.Form.Get("guest")
 
-	models.ProcessRequest(id, guest)
+	Relationship.ProcessRequest(id, guest)
 	w.WriteHeader(http.StatusOK)
 
 }
 
 func AcceptRequest(w http.ResponseWriter, r *http.Request) {
 
-	id := r.Header.Get("id")
-	session := r.Header.Get("session")
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
 
-	if !models.VerifySession(id, session) {
-		w.WriteHeader(http.StatusUnauthorized)
+	err := r.ParseForm()
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	guest := r.Form.Get("guest")
 
-	models.AcceptRequest(id, guest)
+	Relationship.AcceptRequest(id, guest)
+
+}
+
+func RejectRequest(w http.ResponseWriter, r *http.Request) {
+
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
+
+	err := r.ParseForm()
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	guest := r.Form.Get("guest")
+
+	Relationship.CancelStatus(id, guest)
 
 }
 
 func ModifyRelationship(w http.ResponseWriter, r *http.Request) {
 
-	id := r.Header.Get("id")
-	session := r.Header.Get("session")
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
 
-	if !models.VerifySession(id, session) {
-		w.WriteHeader(http.StatusUnauthorized)
+	err := r.ParseForm()
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -56,21 +89,21 @@ func ModifyRelationship(w http.ResponseWriter, r *http.Request) {
 
 	switch request {
 	case "block":
-		if models.GetRelationship(id, guest) == "be blocked" {
+		if Relationship.GetRelationship(id, guest) == "be blocked" {
 			w.WriteHeader(http.StatusNotAcceptable)
 			return
 		}
-		models.Block(id, guest)
+		Relationship.Block(id, guest)
 		w.WriteHeader(http.StatusOK)
 	case "unblock":
-		if models.GetRelationship(id, guest) != "blocked" {
+		if Relationship.GetRelationship(id, guest) != "blocked" {
 			w.WriteHeader(http.StatusNotAcceptable)
 			return
 		}
-		models.CancelStatus(id, guest)
+		Relationship.CancelStatus(id, guest)
 		w.WriteHeader(http.StatusOK)
 	case "unfriend":
-		models.CancelStatus(id, guest)
+		Relationship.CancelStatus(id, guest)
 		w.WriteHeader(http.StatusOK)
 	}
 

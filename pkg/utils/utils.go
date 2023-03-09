@@ -1,20 +1,36 @@
 package utils
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"io"
+	"os"
+
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/cloudinary/cloudinary-go"
+	"github.com/cloudinary/cloudinary-go/api/uploader"
 )
 
 var (
 	TimeFormat string = "2006-01-02 15:04:05"
+)
+
+// status of relationship
+const (
+	Friend      string = "friend"
+	SentRequest string = "sent request"
+	GotRequest  string = "got request"
+	Block       string = "blocked"
+	BeBlocked   string = "be blocked"
 )
 
 func ParseBody(r *http.Request, x interface{}) {
@@ -124,5 +140,45 @@ func RandomStringRunes(n int) string {
 	}
 
 	return string(b)
+
+}
+
+func UploadImageToCloudiary(r *http.Request, field string) (string, int) {
+
+	r.ParseMultipartForm(0)
+
+	in, fileHeader, err := r.FormFile(field)
+
+	if err != nil {
+		return "", http.StatusBadRequest
+	}
+	defer in.Close()
+
+	out, err := os.OpenFile(fileHeader.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+
+	if err != nil {
+		return "", http.StatusInternalServerError
+	}
+	defer out.Close()
+
+	io.Copy(out, in)
+	defer os.Remove(fileHeader.Filename)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cld, err := cloudinary.NewFromParams(os.Getenv("CLOUDINARY_NAME"), os.Getenv("CLOUDINARY_API_KEY"), os.Getenv("CLOUDINARY_API_SECRET"))
+
+	if err != nil {
+		return "", http.StatusInternalServerError
+	}
+
+	uploadParam, err := cld.Upload.Upload(ctx, fileHeader.Filename, uploader.UploadParams{Folder: os.Getenv("CLOUDINARY_FOLDER")})
+
+	if err != nil {
+		return "", http.StatusInternalServerError
+	}
+
+	return uploadParam.SecureURL, http.StatusOK
 
 }

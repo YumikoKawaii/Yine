@@ -19,18 +19,26 @@ func init() {
 	db.AutoMigrate(&Session{})
 }
 
-func CreateSession(ID string) {
+func (s Session) CreateSession(id string) {
 
 	newSession := Session{}
-	newSession.ID = ID
-	newSession.Session = utils.Hashing(ID + string(rune(time.Now().UnixNano())))
+	newSession.ID = id
+	newSession.Session = utils.Hashing(id + string(rune(time.Now().UnixNano())))
 
 	newSession.Expired = time.Now().AddDate(0, 0, 10).Format(utils.TimeFormat)
 	db.Create(&newSession)
 
 }
 
-func VerifySession(ID string, key string) bool {
+func (s Session) GetSession(id string) string {
+
+	var result string = ""
+	db.Raw("select session from sessions where id = ?", id).Scan(&result)
+	return result
+
+}
+
+func (s Session) VerifySession(ID string, key string) bool {
 
 	var e string = ""
 	db.Raw("select expired from sessions where id = ? and session = ?", ID, key).Scan(&e)
