@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
@@ -50,8 +51,6 @@ func UpdateRegularInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: Check for SQL injection
-
 	if !Profile.UpdateField(id, field, value) {
 		w.WriteHeader(http.StatusTooEarly)
 		return
@@ -61,8 +60,33 @@ func UpdateRegularInfo(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetUserInfo(w http.ResponseWriter, r *http.Request) {
+func GetProfile(w http.ResponseWriter, r *http.Request) {
 
-	// Temporary unavailable
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
+
+	guest := r.URL.Query().Get("id")
+
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	profile := Profile.GetUserInfo(guest)
+
+	if id != guest && !security.IsAccessable(id, guest) {
+
+		profile.Address = ""
+		profile.Birthday = ""
+		profile.Hobbies = ""
+
+	}
+
+	res, _ := json.Marshal(profile)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
 
 }
