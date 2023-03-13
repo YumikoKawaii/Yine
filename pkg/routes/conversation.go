@@ -8,8 +8,6 @@ import (
 var ConversationRoutes = func(router *mux.Router) {
 
 	router.HandleFunc("/conversation/", controllers.ChangeNickname).Methods("PUT")
-
-	router.HandleFunc("/conversation/c/", controllers.NewChat).Methods("POST")
 	//router.HandleFunc("/conversation/c/", controllers.GetChatId).Methods("GET")
 	//router.HandleFunc("/conversation/c/", controllers.DeleteChat).Methods("DELETE")
 

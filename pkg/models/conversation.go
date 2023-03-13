@@ -1,30 +1,29 @@
 package models
 
-import "github.com/YumikoKawaii/Yine/pkg/config"
+import (
+	"github.com/YumikoKawaii/Yine/pkg/utils"
+)
 
 type Conversation struct {
-	CoID     string `json:"co_id" gorm:"primarykey"`
 	User     string `json:"user"`
+	CoID     string `json:"co_id"`
 	Role     string `json:"role"`
 	Nickname string `json:"nickname"`
+	Status   string `json:"status"`
 }
 
 func init() {
-	config.Connect()
-	db = config.GetDB()
 	db.AutoMigrate(&Conversation{})
 }
 
 func (c Conversation) NewConnect(coid string, user string, role string) {
 
-	newRecord := Conversation{
+	db.Create(&Conversation{
 		CoID:     coid,
 		User:     user,
 		Role:     role,
 		Nickname: "",
-	}
-
-	db.Create(&newRecord)
+	})
 
 }
 
@@ -52,12 +51,19 @@ func (c Conversation) ChangeNickname(coid string, user string, nickname string) 
 
 }
 
-func (c Conversation) GetRole(coid string, user string) string {
+func (c Conversation) IsMember(coid string, user string) bool {
 
 	result := ""
 	db.Raw("select role from conversations where co_id = ? and user = ?", coid, user).Scan(&result)
-	return result
+	return result != ""
 
+}
+
+func (c Conversation) IsAdmin(coid string, user string) bool {
+
+	result := ""
+	db.Raw("select role from conversations where co_id = ? and user = ?", coid, user).Scan(&result)
+	return result == utils.Admin
 }
 
 func (c Conversation) RemoveConversation(coid string) {
@@ -69,8 +75,24 @@ func (c Conversation) RemoveConversation(coid string) {
 func (c Conversation) IsConversationExist(coid string) bool {
 
 	result := ""
+	db.Raw("select distinct co_id from conversations where co_id = ?", coid).Scan(&result)
+	return result != ""
+}
 
-	db.Raw("select co_id from conversations where co_id = ?", coid).Scan(&result)
+func (c Conversation) IsConversationBetween(user string, guest string) bool {
 
-	return result == ""
+	result := ""
+	db.Raw("select user from conversations where user = ? and co_id = ?", user, guest)
+
+	return result != ""
+}
+
+func (c Conversation) GetReceivers(coid string, id string) []string {
+
+	result := make([]string, 0)
+
+	db.Raw("select user from conversations where co_id = ? and user <> ?", coid, id).Scan(&result)
+
+	return result
+
 }

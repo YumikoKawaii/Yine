@@ -37,3 +37,11 @@ func (g Group) ChangeName(gid string, name string) {
 	db.Exec("update `groups` set name = ? where g_id = ?", name, gid)
 
 }
+
+func (g Group) IsGroup(coid string) bool {
+
+	result := ""
+	db.Raw("select g_id from `groups` where g_id = ?", coid).Scan(&result)
+	return result != ""
+
+}
