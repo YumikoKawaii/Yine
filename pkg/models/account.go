@@ -39,22 +39,20 @@ func (a Account) CreateAccount(id string, email string, password string) {
 }
 
 func (a Account) IsEmailExist(email string) bool {
-	r := Account{}
-	db.Raw("select * from accounts where email = ?", email).Scan(&r)
-	return r != Account{}
+	result := ""
+	db.Raw("select email from accounts where email = ?", email).Scan(&result)
+	return result != ""
 }
 
 func (a Account) IsIdExist(id string) bool {
-
-	r := Account{}
-	db.Raw("select * from accounts where id = ?", id).Scan(&r)
-	return r != Account{}
-
+	result := ""
+	db.Raw("select * from accounts where id = ?", id).Scan(&result)
+	return result != ""
 }
 
 func (a Account) VerifyAccount(email string, password string) bool {
 
-	var p string = ""
+	p := ""
 	db.Raw("select password from accounts where email = ?", email).Scan(&p)
 	return p == utils.Hashing(password)
 
@@ -74,11 +72,17 @@ func (a Account) UpdatePassword(id string, new_password string) {
 
 func (a Account) VerifyPassword(Id string, password string) bool {
 
-	var p string = ""
+	p := ""
 	db.Raw("select password from accounts where id = ?", Id).Scan(&p)
-
 	return p == utils.Hashing(password)
 
+}
+
+func (a Account) GetID(email string) string {
+
+	result := ""
+	db.Raw("select id from accounts where email = ?", email).Scan(&result)
+	return result
 }
 
 func (a Account) DeleteAccount(id string) {

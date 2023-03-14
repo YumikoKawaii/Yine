@@ -31,7 +31,7 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if security.VerifyPassword(password) {
+	if !security.VerifyPassword(password) {
 		w.WriteHeader(http.StatusNotAcceptable)
 		w.Write([]byte("Password"))
 		return
@@ -40,6 +40,8 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 	if !Account.IsEmailExist(email) {
 
 		id := utils.Hashing(email + utils.RandomStringRunes(10))
+
+		Account.CreateAccount(id, email, utils.Hashing(password))
 
 		Session.CreateSession(id)
 		Profile.CreateEmptyRecord(id)
@@ -67,7 +69,22 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 
-	//Wait until complete other features!
+	email := r.Form.Get("id")
+	password := r.Form.Get("password")
+
+	if !Account.IsEmailExist(email) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if !Account.VerifyAccount(email, password) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	id := Account.GetID(email)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(id))
 
 }
 
