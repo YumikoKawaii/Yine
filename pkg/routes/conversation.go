@@ -7,16 +7,18 @@ import (
 
 var ConversationRoutes = func(router *mux.Router) {
 
-	router.HandleFunc("/conversation/", controllers.ChangeNickname).Methods("PUT")
+	router.HandleFunc("/cvs", controllers.FetchAllConversation).Methods("GET")
+	router.HandleFunc("/cvs/{coid}", controllers.FetchConversation).Methods("GET")
+	router.HandleFunc("/cvs/{coid}", controllers.ChangeNickname).Methods("PUT")
 	//router.HandleFunc("/conversation/c/", controllers.GetChatId).Methods("GET")
 	//router.HandleFunc("/conversation/c/", controllers.DeleteChat).Methods("DELETE")
 
-	router.HandleFunc("/conversation/g/", controllers.NewGroup).Methods("POST")
-	router.HandleFunc("/conversation/g/am/", controllers.AddMemeber).Methods("POST")
-	router.HandleFunc("/conversation/g/cmr/", controllers.ChangeMemberRole).Methods("PUT")
-	router.HandleFunc("/conversation/g/cn/", controllers.ChangeGroupName).Methods("PUT")
-	router.HandleFunc("/conversation/g/ca/", controllers.ChangeGroupAvatar).Methods("PUT")
-	router.HandleFunc("/conversation/g/dm/", controllers.DeleteMember).Methods("DELETE")
-	router.HandleFunc("/conversation/g/dg/", controllers.DeleteGroup).Methods("DELETE")
+	router.HandleFunc("/cvs/g", controllers.NewGroup).Methods("POST")
+	router.HandleFunc("/cvs/g/am/{gid}", controllers.AddMemeber).Methods("POST")
+	router.HandleFunc("/cvs/g/cmr/{gid}", controllers.ChangeMemberRole).Methods("PUT")
+	router.HandleFunc("/cvs/g/cn/{gid}", controllers.ChangeGroupName).Methods("PUT")
+	router.HandleFunc("/cvs/g/ca/{gid}", controllers.ChangeGroupAvatar).Methods("PUT")
+	router.HandleFunc("/cvs/g/dm/{gid}", controllers.DeleteMember).Methods("DELETE")
+	router.HandleFunc("/cvs/g/dg/{gid}", controllers.DeleteGroup).Methods("DELETE")
 
 }

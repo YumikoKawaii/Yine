@@ -83,16 +83,36 @@ func (c Conversation) IsConversationBetween(user string, guest string) bool {
 
 	result := ""
 	db.Raw("select user from conversations where user = ? and co_id = ?", user, guest)
-
 	return result != ""
 }
 
 func (c Conversation) GetReceivers(coid string, id string) []string {
 
 	result := make([]string, 0)
-
 	db.Raw("select user from conversations where co_id = ? and user <> ?", coid, id).Scan(&result)
+	return result
 
+}
+
+func (c Conversation) GetAllConversation(id string) []string {
+
+	result := make([]string, 0)
+	db.Raw("select co_id from conversations where user = ?", id).Scan(&result)
+	return result
+}
+
+func (c Conversation) GetGroupMember(gid string) []Conversation {
+
+	result := make([]Conversation, 0)
+	db.Raw("select * from conversations where co_id = ?", gid).Scan(&result)
+	return result
+
+}
+
+func (c Conversation) GetPartner(user string, guest string) Conversation {
+
+	result := Conversation{}
+	db.Raw("select * from conversations where co_id = ? and user = ?", user, guest).Scan(&result)
 	return result
 
 }

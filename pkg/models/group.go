@@ -45,3 +45,10 @@ func (g Group) IsGroup(coid string) bool {
 	return result != ""
 
 }
+
+func (g Group) GetGroup(gid string) Group {
+
+	result := Group{}
+	db.Raw("select * from `groups` where g_id = ?", gid).Scan(&result)
+	return result
+}

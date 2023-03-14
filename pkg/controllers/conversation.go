@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
 	"github.com/YumikoKawaii/Yine/pkg/security"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
+	"github.com/gorilla/mux"
 )
 
 var (
@@ -27,7 +29,8 @@ func ChangeNickname(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	coid := r.Form.Get("coid")
+	vars := mux.Vars(r)
+	coid := vars["coid"]
 	nickname := r.Form.Get("nickname")
 
 	if (Account.IsIdExist(coid) && Conversation.IsConversationBetween(id, coid)) || (Group.IsGroup(coid) && Conversation.IsMember(coid, id)) {
@@ -85,7 +88,8 @@ func AddMemeber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gid := r.Form.Get("gid")
+	vars := mux.Vars(r)
+	gid := vars["gid"]
 	if !Group.IsGroup(gid) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Group"))
@@ -99,7 +103,7 @@ func AddMemeber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !Conversation.IsAdmin(gid, id) {
+	if !Conversation.IsAdmin(gid, id) || !security.IsAccessable(id, guest) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -121,7 +125,8 @@ func ChangeMemberRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gid := r.Form.Get("gid")
+	vars := mux.Vars(r)
+	gid := vars["gid"]
 	if !Group.IsGroup(gid) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Group"))
@@ -137,7 +142,7 @@ func ChangeMemberRole(w http.ResponseWriter, r *http.Request) {
 
 	role := r.Form.Get("role")
 
-	if !Conversation.IsAdmin(gid, id) {
+	if !Conversation.IsAdmin(gid, id) || !Conversation.IsMember(gid, guest) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -160,10 +165,10 @@ func ChangeGroupName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gid := r.Form.Get("gid")
+	vars := mux.Vars(r)
+	gid := vars["gid"]
 	if !Group.IsGroup(gid) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Group"))
 		return
 	}
 
@@ -188,8 +193,9 @@ func ChangeGroupAvatar(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseMultipartForm(0)
 
-	gid := r.FormValue("gid")
-	if !Conversation.IsConversationExist(gid) {
+	vars := mux.Vars(r)
+	gid := vars["gid"]
+	if !Group.IsGroup(gid) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -224,7 +230,8 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gid := r.Form.Get("gid")
+	vars := mux.Vars(r)
+	gid := vars["gid"]
 	if !Group.IsGroup(gid) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Group"))
@@ -238,7 +245,7 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !Conversation.IsAdmin(gid, id) {
+	if !Conversation.IsAdmin(gid, id) || !Conversation.IsMember(gid, guest) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -251,5 +258,68 @@ func DeleteMember(w http.ResponseWriter, r *http.Request) {
 func DeleteGroup(w http.ResponseWriter, r *http.Request) {
 
 	//Temporary unavailable
+
+}
+
+func FetchAllConversation(w http.ResponseWriter, r *http.Request) {
+
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
+
+	data := Conversation.GetAllConversation(id)
+	res, _ := json.Marshal(data)
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+
+}
+
+func FetchConversation(w http.ResponseWriter, r *http.Request) {
+
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
+
+	vars := mux.Vars(r)
+	coid := vars["coid"]
+
+	if !Conversation.IsMember(coid, id) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	if Group.IsGroup(coid) {
+
+		g_data := Group.GetGroup(coid)
+		c_data := Conversation.GetGroupMember(coid)
+
+		data := struct {
+			Type      string                `json:"type"`
+			GroupData models.Group          `json:"gdata"`
+			Member    []models.Conversation `json:"member"`
+		}{Type: "group", GroupData: g_data, Member: c_data}
+
+		res, _ := json.Marshal(data)
+		w.WriteHeader(http.StatusOK)
+		w.Write(res)
+
+	} else {
+
+		user := Conversation.GetPartner(id, coid)
+		partner := Conversation.GetPartner(coid, id)
+
+		data := struct {
+			Type    string              `json:"type"`
+			User    models.Conversation `json:"user"`
+			Partner models.Conversation `json:"partner"`
+		}{Type: "personal", User: user, Partner: partner}
+
+		res, _ := json.Marshal(data)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(res)
+	}
 
 }
