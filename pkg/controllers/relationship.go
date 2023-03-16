@@ -1,87 +1,28 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
 	"github.com/YumikoKawaii/Yine/pkg/security"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
+	"github.com/gorilla/mux"
 )
 
 var Relationship models.Relationship
 
-func SentRequest(w http.ResponseWriter, r *http.Request) {
+func GetRelationship(w http.ResponseWriter, r *http.Request) {
 
 	id := security.Authorize(w, r)
 	if id == "" {
 		return
 	}
 
-	err := r.ParseForm()
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	guest := r.Form.Get("guest")
-
-	if !Account.IsIdExist(guest) {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	Relationship.ProcessRequest(id, guest)
+	result := Relationship.GetRelationship(id)
+	res, _ := json.Marshal(result)
 	w.WriteHeader(http.StatusOK)
-
-}
-
-func AcceptRequest(w http.ResponseWriter, r *http.Request) {
-
-	id := security.Authorize(w, r)
-	if id == "" {
-		return
-	}
-
-	err := r.ParseForm()
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	guest := r.Form.Get("guest")
-
-	if !Account.IsIdExist(guest) {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	Relationship.AcceptRequest(id, guest)
-}
-
-func RejectRequest(w http.ResponseWriter, r *http.Request) {
-
-	id := security.Authorize(w, r)
-	if id == "" {
-		return
-	}
-
-	err := r.ParseForm()
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	guest := r.Form.Get("guest")
-	if !Account.IsIdExist(guest) {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	Relationship.CancelStatus(id, guest)
-
+	w.Write(res)
 }
 
 func ModifyRelationship(w http.ResponseWriter, r *http.Request) {
@@ -91,47 +32,45 @@ func ModifyRelationship(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := r.ParseForm()
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	guest := r.Form.Get("guest")
+	vars := mux.Vars(r)
+	guest := vars["id"]
 
 	if !Account.IsIdExist(guest) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	request := r.Form.Get("request")
+	if err := r.ParseForm(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	relationship := Relationship.GetRelationship(id, guest)
+	action := r.Form.Get("action")
 
-	switch request {
-	case "block":
-		if relationship == utils.BeBlocked {
-			w.WriteHeader(http.StatusNotAcceptable)
+	switch action {
+	case "sent", "accept", "reject", "unfriend", "block":
+		if rlts := Relationship.GetRelationshipBetween(id, guest); rlts == utils.Block || rlts == utils.BeBlocked {
+			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		Relationship.Block(id, guest)
-		w.WriteHeader(http.StatusOK)
+		switch action {
+		case "sent":
+			Relationship.SentRequest(id, guest)
+		case "accept":
+			Relationship.AcceptRequest(id, guest)
+		case "reject", "unfriend":
+			Relationship.CancelStatus(id, guest)
+		case "block":
+			Relationship.Block(id, guest)
+		}
 	case "unblock":
-		if relationship != utils.Block {
-			w.WriteHeader(http.StatusNotAcceptable)
+		if rlts := Relationship.GetRelationshipBetween(id, guest); rlts != utils.Block {
+			w.WriteHeader(http.StatusForbidden)
 			return
 		}
 		Relationship.CancelStatus(id, guest)
-		w.WriteHeader(http.StatusOK)
-	case "unfriend":
-		if relationship == utils.Friend {
-			Relationship.CancelStatus(id, guest)
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		w.WriteHeader(http.StatusNotAcceptable)
-
 	}
+
+	w.WriteHeader(http.StatusOK)
 
 }

@@ -3,7 +3,7 @@ package models
 import "github.com/YumikoKawaii/Yine/pkg/utils"
 
 type Relationship struct {
-	ID     string `json:"id" gorm:"primarykey"`
+	User   string `json:"user"`
 	Guest  string `json:"guest"`
 	Status string `json:"status"`
 }
@@ -12,57 +12,61 @@ func init() {
 	db.AutoMigrate(&Relationship{})
 }
 
-func (r Relationship) GetRelationship(id string, guest string) string {
+func (r Relationship) GetRelationshipBetween(user string, guest string) string {
 
 	result := ""
-	db.Raw("select status from relationships where id = ? and guest = ?", id, guest).Scan(&result)
+	db.Raw("select status from relationships where user = ? and guest = ?", user, guest).Scan(&result)
 	return result
 
 }
 
-func (r Relationship) ProcessRequest(id string, guest string) {
+func (r Relationship) SentRequest(user string, guest string) {
 
-	i_record := &Relationship{
-		ID:     id,
+	db.Create(Relationship{
+		User:   user,
 		Guest:  guest,
 		Status: utils.SentRequest,
-	}
-
-	g_record := &Relationship{
-		ID:     guest,
-		Guest:  id,
+	})
+	db.Create(Relationship{
+		User:   guest,
+		Guest:  user,
 		Status: utils.GotRequest,
-	}
-
-	db.Create(i_record)
-	db.Create(g_record)
+	})
 
 }
 
-func (r Relationship) AcceptRequest(id string, guest string) {
+func (r Relationship) AcceptRequest(user string, guest string) {
 
-	db.Exec("update relationships set status = ? where id = ? and guest = ?", utils.Friend, id, guest)
-	db.Exec("update relationships set status = ? where id = ? and guest = ?", utils.Friend, guest, id)
-
-}
-
-func (r Relationship) CancelStatus(id string, guest string) {
-
-	db.Exec("delete from relationships where id = ? and guest = ?", id, guest)
-	db.Exec("delete from relationships where id = ? and guest = ?", guest, id)
+	db.Exec("update relationships set status = ? where user = ? and guest = ?", utils.Friend, user, guest)
+	db.Exec("update relationships set status = ? where user = ? and guest = ?", utils.Friend, guest, user)
 
 }
 
-func (r Relationship) CancelAllStatus(id string) {
+func (r Relationship) CancelStatus(user string, guest string) {
 
-	db.Exec("delete from relationships where id = ?", id)
-	db.Exec("delete from relationships where guest = ?", id)
+	db.Exec("delete from relationships where user = ? and guest = ?", user, guest)
+	db.Exec("delete from relationships where user = ? and guest = ?", guest, user)
 
 }
 
-func (r Relationship) Block(id string, guest string) {
+func (r Relationship) CancelAllStatus(user string) {
 
-	db.Exec("update relationships set status = ? where id = ? and guest = ?", utils.Block, id, guest)
-	db.Exec("update relationships set status = ? where id = ? and guest = ?", utils.BeBlocked, guest, id)
+	db.Exec("delete from relationships where user = ?", user)
+	db.Exec("delete from relationships where guest = ?", user)
+
+}
+
+func (r Relationship) Block(user string, guest string) {
+
+	db.Exec("update relationships set status = ? where user = ? and guest = ?", utils.Block, user, guest)
+	db.Exec("update relationships set status = ? where user = ? and guest = ?", utils.BeBlocked, guest, user)
+
+}
+
+func (r Relationship) GetRelationship(user string) []Relationship {
+
+	result := make([]Relationship, 0)
+	db.Raw("select * from relationships where user = ?", user).Scan(&result)
+	return result
 
 }

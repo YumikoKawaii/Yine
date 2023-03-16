@@ -7,7 +7,7 @@ import (
 
 var RelationshipRoutes = func(router *mux.Router) {
 
-	router.HandleFunc("/relationship/", controllers.SentRequest).Methods("POST")
-	router.HandleFunc("/relationship/a", controllers.AcceptRequest).Methods("POST")
-	router.HandleFunc("/relationship/", controllers.ModifyRelationship).Methods("PUT")
+	router.HandleFunc("/rlts", controllers.GetRelationship).Methods("GET")
+	router.HandleFunc("/rlts/{id}", controllers.ModifyRelationship).Methods("PUT")
+
 }
