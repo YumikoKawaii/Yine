@@ -10,14 +10,15 @@ import (
 	"github.com/YumikoKawaii/Yine/pkg/utils"
 )
 
-var Account models.Account
-var Session models.Session
+var (
+	Account models.Account
+	Session models.Session
+	Setting models.Setting
+)
 
 func CreateAccount(w http.ResponseWriter, r *http.Request) {
 
-	err := r.ParseForm()
-
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -45,6 +46,7 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 
 		Session.CreateSession(id)
 		Profile.CreateEmptyRecord(id)
+		Setting.NewSetting(id)
 
 		resInfo := struct {
 			ID      string `json:"id"`
@@ -83,8 +85,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := Account.GetID(email)
+	Session.CreateSession(id)
+	data := struct {
+		ID      string `json:"id"`
+		Session string `json:"session"`
+	}{ID: id, Session: Session.GetSession(id)}
+
+	res, _ := json.Marshal(data)
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(id))
+	w.Write(res)
 
 }
 
@@ -95,22 +105,16 @@ func ChangeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := r.ParseForm()
-
-	if err != nil {
-
+	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
-
 	}
 
 	new_email := r.Form.Get("email")
 
 	if _, err := mail.ParseAddress(new_email); err != nil {
-
 		w.WriteHeader(http.StatusNotAcceptable)
 		return
-
 	}
 
 	Account.UpdateEmail(id, new_email)
@@ -122,9 +126,7 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	id := r.Header.Get("id")
 
-	err := r.ParseForm()
-
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -132,7 +134,7 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	old_password := r.Form.Get("old_password")
 	new_password := r.Form.Get("new_password")
 
-	if Account.VerifyPassword(id, old_password) {
+	if !Account.VerifyPassword(id, old_password) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

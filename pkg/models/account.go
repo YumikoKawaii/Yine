@@ -46,7 +46,7 @@ func (a Account) IsEmailExist(email string) bool {
 
 func (a Account) IsIdExist(id string) bool {
 	result := ""
-	db.Raw("select * from accounts where id = ?", id).Scan(&result)
+	db.Raw("select id from accounts where id = ?", id).Scan(&result)
 	return result != ""
 }
 

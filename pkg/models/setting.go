@@ -1,9 +1,5 @@
 package models
 
-import (
-	"github.com/YumikoKawaii/Yine/pkg/config"
-)
-
 type Setting struct {
 	ID       string `json:"id" gorm:"primarykey"`
 	Public   bool   `json:"public"`
@@ -11,20 +7,16 @@ type Setting struct {
 }
 
 func init() {
-	config.Connect()
-	db = config.GetDB()
 	db.AutoMigrate(&Setting{})
 }
 
 func (s Setting) NewSetting(id string) {
 
-	newRecord := Setting{
+	db.Create(Setting{
 		ID:       id,
 		Public:   true,
 		Stranger: true,
-	}
-
-	db.Create(&newRecord)
+	})
 
 }
 
