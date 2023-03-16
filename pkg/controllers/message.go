@@ -3,10 +3,12 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
 	"github.com/YumikoKawaii/Yine/pkg/security"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,6 +22,7 @@ var (
 	Client   models.Client
 	manager  models.Manager
 	Response models.Response
+	Message  models.Message
 )
 
 func checkOrigin(r *http.Request) bool {
@@ -67,7 +70,14 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	coid := r.URL.Query().Get("coid")
+	vars := mux.Vars(r)
+	coid := vars["coid"]
+
+	if err := r.ParseForm(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	message := r.Form.Get("message")
 	res, _ := json.Marshal(Response.NewResponse("message", id, "send", coid, message))
 
@@ -87,6 +97,7 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 		if found {
 			client.GotMessage(res)
 		}
+		Message.NewMessage(id, coid, "text", message)
 		w.WriteHeader(http.StatusOK)
 		return
 	} else if Group.IsGroup(coid) {
@@ -105,9 +116,84 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
+		Message.NewMessage(id, coid, "text", message)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	w.WriteHeader(http.StatusNotFound)
+}
+
+func getAllMessageData(id string, coid string) []models.Message {
+
+	if Group.IsGroup(coid) {
+
+		return Message.FetchAllGroupConversation(coid)
+
+	} else {
+
+		return Message.FetchAllPersonalConversation(id, coid)
+
+	}
+
+}
+
+func getMessageData(id string, coid string, mid uint32) []models.Message {
+
+	if Group.IsGroup(coid) {
+
+		return Message.FetchGroupConversation(coid, mid)
+
+	} else {
+
+		return Message.FetchPersonalConversation(id, coid, mid)
+
+	}
+
+}
+
+func FetchMessage(w http.ResponseWriter, r *http.Request) {
+
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
+
+	vars := mux.Vars(r)
+	coid := vars["coid"]
+
+	if !Conversation.IsConversationExist(coid) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	m_id := r.Form.Get("m_id")
+
+	if m_id == "" {
+
+		data := getAllMessageData(id, coid)
+		res, _ := json.Marshal(data)
+		w.WriteHeader(http.StatusOK)
+		w.Write(res)
+
+	} else {
+
+		mid, err := strconv.Atoi(m_id)
+		if err != nil || mid < 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		data := getMessageData(id, coid, uint32(mid))
+		res, _ := json.Marshal(data)
+		w.WriteHeader(http.StatusOK)
+		w.Write(res)
+
+	}
+
 }

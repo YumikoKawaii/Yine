@@ -7,7 +7,8 @@ import (
 
 var MessageRoutes = func(router *mux.Router) {
 
-	router.HandleFunc("/c/", controllers.ConnectToSocket).Methods("GET")
-	router.HandleFunc("/m/", controllers.SendMessage).Methods("POST")
+	router.HandleFunc("/c", controllers.ConnectToSocket).Methods("GET")
+	router.HandleFunc("/m/{coid}", controllers.FetchMessage).Methods("GET")
+	router.HandleFunc("/m/{coid}", controllers.SendMessage).Methods("POST")
 
 }
