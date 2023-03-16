@@ -7,8 +7,8 @@ import (
 
 var ProfileRoutes = func(router *mux.Router) {
 
-	router.HandleFunc("/profile/", controllers.GetUserInfo).Methods("GET")
-	router.HandleFunc("/profile/avatar/", controllers.UpdateAvatar).Methods("PUT")
-	router.HandleFunc("/profile/", controllers.UpdateRegularInfo).Methods("PUT")
+	router.HandleFunc("/p/{id}", controllers.GetProfile).Methods("GET")
+	router.HandleFunc("/p/a", controllers.UpdateAvatar).Methods("PUT")
+	router.HandleFunc("/p", controllers.UpdateRegularInfo).Methods("PUT")
 
 }

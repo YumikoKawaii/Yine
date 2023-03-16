@@ -2,8 +2,6 @@ package models
 
 import (
 	"time"
-
-	"github.com/YumikoKawaii/Yine/pkg/config"
 )
 
 type Profile struct {
@@ -18,18 +16,15 @@ type Profile struct {
 }
 
 func init() {
-	config.Connect()
-	db = config.GetDB()
 	db.AutoMigrate(&Profile{})
 }
 
 func (p Profile) CreateEmptyRecord(id string) {
 
-	newRecord := &Profile{
+	db.Create(Profile{
 		ID:         id,
 		LastUpdate: time.Now().AddDate(0, 0, -61),
-	}
-	db.Create(newRecord)
+	})
 
 }
 
@@ -60,11 +55,11 @@ func (p Profile) UpdateField(id string, field string, value string) bool {
 	return false
 }
 
-func (p Profile) GetUserInfo(Id string) Profile {
+func (p Profile) GetUserInfo(id string) Profile {
 
 	data := Profile{}
 
-	db.Raw("select * from profiles where id = ?", Id).Scan(&data)
+	db.Raw("select * from profiles where id = ?", id).Scan(&data)
 
 	return data
 

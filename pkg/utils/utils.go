@@ -33,6 +33,18 @@ const (
 	BeBlocked   string = "be blocked"
 )
 
+// role for group chat
+const (
+	Admin  string = "admin"
+	Member string = "member"
+)
+
+func IsValidRole(role string) bool {
+
+	return role == Admin || role == Member
+
+}
+
 func ParseBody(r *http.Request, x interface{}) {
 
 	body, err := ioutil.ReadAll(r.Body)

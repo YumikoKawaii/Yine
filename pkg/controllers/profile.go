@@ -27,6 +27,7 @@ func UpdateAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Profile.UpdateField(id, "avatar", url)
+	w.Write([]byte(url))
 
 }
 
@@ -37,8 +38,7 @@ func UpdateRegularInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := r.ParseForm()
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -68,14 +68,12 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	guest := r.URL.Query().Get("id")
-
 	if !Account.IsIdExist(guest) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	profile := Profile.GetUserInfo(guest)
-
 	if id != guest && !security.IsAccessable(id, guest) {
 
 		profile.Address = ""

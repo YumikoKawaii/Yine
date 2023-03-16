@@ -13,7 +13,6 @@ import (
 var (
 	Conversation models.Conversation
 	Group        models.Group
-	Setting      models.Setting
 )
 
 func ChangeNickname(w http.ResponseWriter, r *http.Request) {
