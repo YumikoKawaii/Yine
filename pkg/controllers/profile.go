@@ -7,6 +7,7 @@ import (
 	"github.com/YumikoKawaii/Yine/pkg/models"
 	"github.com/YumikoKawaii/Yine/pkg/security"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
+	"github.com/gorilla/mux"
 )
 
 var Profile models.Profile
@@ -67,7 +68,8 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guest := r.URL.Query().Get("id")
+	vars := mux.Vars(r)
+	guest := vars["id"]
 	if !Account.IsIdExist(guest) {
 		w.WriteHeader(http.StatusNotFound)
 		return
