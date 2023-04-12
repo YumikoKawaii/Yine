@@ -8,10 +8,10 @@ import (
 var ConversationRoutes = func(router *mux.Router) {
 
 	router.HandleFunc("/cvs", controllers.FetchAllConversation).Methods("GET")
-	router.HandleFunc("/cvs/{coid}", controllers.FetchConversation).Methods("GET")
+	router.HandleFunc("/cvs/p/d/{coid}", controllers.FetchPersonalChat).Methods("GET")
+	router.HandleFunc("/cvs/g/d/{coid}", controllers.FetchGroupChat).Methods("GET")
+	router.HandleFunc("/cvs/{coid}", controllers.FetchBasicInfoConversation).Methods("GET")
 	router.HandleFunc("/cvs/{coid}", controllers.ChangeNickname).Methods("PUT")
-	//router.HandleFunc("/conversation/c/", controllers.GetChatId).Methods("GET")
-	//router.HandleFunc("/conversation/c/", controllers.DeleteChat).Methods("DELETE")
 
 	router.HandleFunc("/cvs/g", controllers.NewGroup).Methods("POST")
 	router.HandleFunc("/cvs/g/am/{gid}", controllers.AddMemeber).Methods("POST")

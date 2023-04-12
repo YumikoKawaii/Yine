@@ -79,7 +79,6 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	message := r.Form.Get("message")
-	res, _ := json.Marshal(Response.NewResponse("message", id, "send", coid, message))
 
 	if Account.IsIdExist(coid) {
 
@@ -93,11 +92,11 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			Conversation.NewConnect(coid, id, utils.Member)
 		}
 
+		res, _ := json.Marshal(Message.NewMessage(id, coid, "text", message))
 		found, client := manager.GetClient(coid)
 		if found {
 			client.GotMessage(res)
 		}
-		Message.NewMessage(id, coid, "text", message)
 		w.WriteHeader(http.StatusOK)
 		return
 	} else if Group.IsGroup(coid) {
@@ -107,6 +106,7 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		res, _ := json.Marshal(Message.NewMessage(id, coid, "text", message))
 		receivers := Conversation.GetReceivers(coid, id)
 		for _, s := range receivers {
 
@@ -116,7 +116,7 @@ func SendMessage(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
-		Message.NewMessage(id, coid, "text", message)
+
 		w.WriteHeader(http.StatusOK)
 		return
 	}

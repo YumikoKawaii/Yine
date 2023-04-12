@@ -82,7 +82,7 @@ func (c Conversation) IsConversationExist(coid string) bool {
 func (c Conversation) IsConversationBetween(user string, guest string) bool {
 
 	result := ""
-	db.Raw("select user from conversations where user = ? and co_id = ?", user, guest)
+	db.Raw("select user from conversations where user = ? and co_id = ?", user, guest).Scan(&result)
 	return result != ""
 }
 
@@ -109,10 +109,10 @@ func (c Conversation) GetGroupMember(gid string) []Conversation {
 
 }
 
-func (c Conversation) GetPartner(user string, guest string) Conversation {
+func (c Conversation) GetPartner(user string, conv_id string) Conversation {
 
 	result := Conversation{}
-	db.Raw("select * from conversations where co_id = ? and user = ?", user, guest).Scan(&result)
+	db.Raw("select * from conversations where co_id = ? and user = ?", user, conv_id).Scan(&result)
 	return result
 
 }

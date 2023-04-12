@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/YumikoKawaii/Yine/pkg/models"
 	"github.com/YumikoKawaii/Yine/pkg/security"
@@ -274,7 +275,66 @@ func FetchAllConversation(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func FetchConversation(w http.ResponseWriter, r *http.Request) {
+func FetchGroupChat(w http.ResponseWriter, r *http.Request) {
+
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
+
+	vars := mux.Vars(r)
+	coid := vars["coid"]
+
+	if !Conversation.IsMember(coid, id) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	g_data := Group.GetGroup(coid)
+	members := Conversation.GetGroupMember(coid)
+
+	data := struct {
+		GroupData models.Group          `json:"gdata"`
+		Members   []models.Conversation `json:"members"`
+	}{GroupData: g_data, Members: members}
+
+	res, _ := json.Marshal(data)
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+
+}
+
+func FetchPersonalChat(w http.ResponseWriter, r *http.Request) {
+
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
+
+	vars := mux.Vars(r)
+	coid := vars["coid"]
+
+	if !Conversation.IsMember(coid, id) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	user := Conversation.GetPartner(coid, id)
+	partner := Conversation.GetPartner(id, coid)
+
+	data := struct {
+		User    models.Conversation `json:"user"`
+		Partner models.Conversation `json:"partner"`
+	}{User: user, Partner: partner}
+
+	res, _ := json.Marshal(data)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+
+}
+
+func FetchBasicInfoConversation(w http.ResponseWriter, r *http.Request) {
 
 	id := security.Authorize(w, r)
 	if id == "" {
@@ -292,13 +352,21 @@ func FetchConversation(w http.ResponseWriter, r *http.Request) {
 	if Group.IsGroup(coid) {
 
 		g_data := Group.GetGroup(coid)
-		c_data := Conversation.GetGroupMember(coid)
+
+		lastest := Message.LastestGroupMessage(coid)
+
+		lastestMessage := "You've received a message!"
+		if lastest.Sender == id {
+			lastestMessage = "You've sent a message!"
+		}
 
 		data := struct {
-			Type      string                `json:"type"`
-			GroupData models.Group          `json:"gdata"`
-			Member    []models.Conversation `json:"member"`
-		}{Type: "group", GroupData: g_data, Member: c_data}
+			Type    string    `json:"type"`
+			Name    string    `json:"name"`
+			Avatar  string    `json:"avatar"`
+			Lastest string    `json:"lastest"`
+			Recent  time.Time `json:"recent"`
+		}{Type: "group", Name: g_data.Name, Avatar: g_data.Avatar, Lastest: lastestMessage, Recent: lastest.Time}
 
 		res, _ := json.Marshal(data)
 		w.WriteHeader(http.StatusOK)
@@ -306,14 +374,27 @@ func FetchConversation(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 
-		user := Conversation.GetPartner(id, coid)
 		partner := Conversation.GetPartner(coid, id)
+		profile := Profile.GetUserInfo(coid)
+		lastest := Message.LastestPersonalMessage(id, coid)
+
+		name := partner.Nickname
+		if name == "" {
+			name = profile.Username
+		}
+
+		lastestMessage := "You've received a message!"
+		if lastest.Sender == id {
+			lastestMessage = "You've sent a message!"
+		}
 
 		data := struct {
-			Type    string              `json:"type"`
-			User    models.Conversation `json:"user"`
-			Partner models.Conversation `json:"partner"`
-		}{Type: "personal", User: user, Partner: partner}
+			Type    string    `json:"type"`
+			Name    string    `json:"name"`
+			Avatar  string    `json:"avatar"`
+			Lastest string    `json:"lastest"`
+			Recent  time.Time `json:"recent"`
+		}{Type: "personal", Name: name, Avatar: profile.Avatar, Lastest: lastestMessage, Recent: lastest.Time}
 
 		res, _ := json.Marshal(data)
 

@@ -71,8 +71,8 @@ func CreateAccount(w http.ResponseWriter, r *http.Request) {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 
-	email := r.Form.Get("id")
-	password := r.Form.Get("password")
+	email := r.URL.Query().Get("email")
+	password := r.URL.Query().Get("password")
 
 	if !Account.IsEmailExist(email) {
 		w.WriteHeader(http.StatusNotFound)

@@ -64,3 +64,15 @@ func (p Profile) GetUserInfo(id string) Profile {
 	return data
 
 }
+
+func (p Profile) GetUserAvatarAndUsername(id string) (string, string) {
+
+	result := struct {
+		Username string `json:"username"`
+		Avatar   string `json:"avatar"`
+	}{}
+	db.Raw("select username, avatar from profiles where id = ?", id).Scan(&result)
+
+	return result.Username, result.Avatar
+
+}

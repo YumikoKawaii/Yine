@@ -23,9 +23,17 @@ func init() {
 	db.AutoMigrate(&Message{})
 }
 
-func (m Message) NewMessage(sender string, receiver string, t string, content string) {
+func (m Message) NewMessage(sender string, receiver string, t string, content string) (mess Message) {
 
 	db.Exec("insert into messages (sender, receiver, type, content, time) values (?, ?, ?, ?, ?)", sender, receiver, t, content, time.Now())
+
+	return Message{
+		Sender:   sender,
+		Receiver: receiver,
+		Type:     t,
+		Content:  content,
+		Time:     time.Now(),
+	}
 
 }
 
@@ -58,4 +66,24 @@ func (m Message) FetchGroupConversation(receiver string, mid uint32) []Message {
 	result := make([]Message, 0)
 	db.Raw("select * from messages where receiver = ? and m_id > ?", receiver, mid).Scan(&result)
 	return result
+}
+
+func (m Message) LastestPersonalMessage(sender string, receiver string) Message {
+
+	result := Message{}
+
+	db.Raw("select * from messages where (sender = ? and receiver = ?) or (sender = ? and receiver = ?) order by m_id DESC limit 1", sender, receiver, receiver, sender).Scan(&result)
+
+	return result
+
+}
+
+func (m Message) LastestGroupMessage(receiver string) Message {
+
+	result := Message{}
+
+	db.Raw("select * from messages where receiver = ? order by m_id DESC limit 1", receiver).Scan(&result)
+
+	return result
+
 }

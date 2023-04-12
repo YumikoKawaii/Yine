@@ -90,3 +90,30 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	w.Write(res)
 
 }
+
+func GetProfileAvatarAndUsername(w http.ResponseWriter, r *http.Request) {
+
+	id := security.Authorize(w, r)
+	if id == "" {
+		return
+	}
+
+	vars := mux.Vars(r)
+	guest := vars["id"]
+	if !Account.IsIdExist(guest) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	username, avatar := Profile.GetUserAvatarAndUsername(guest)
+
+	res_info := struct {
+		Username string `json:"username"`
+		Avatar   string `json:"avatar"`
+	}{Username: username, Avatar: avatar}
+
+	res, _ := json.Marshal(res_info)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
