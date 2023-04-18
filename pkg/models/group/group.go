@@ -10,9 +10,9 @@ var (
 )
 
 type Group struct {
-	GID    string `json:"group_id"`
-	Avatar string `json:"avatar"`
-	Name   string `json:"name"`
+	GroupID string `json:"group_id"`
+	Avatar  string `json:"avatar"`
+	Name    string `json:"name"`
 }
 
 func init() {
@@ -23,9 +23,9 @@ func init() {
 func (g Group) NewGroup(group_id string, name string) {
 
 	db.Create(Group{
-		GID:    group_id,
-		Avatar: "default",
-		Name:   name,
+		GroupID: group_id,
+		Avatar:  "default",
+		Name:    name,
 	})
 
 }

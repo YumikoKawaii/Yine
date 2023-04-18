@@ -18,7 +18,7 @@ var (
 )
 
 type Message struct {
-	MID      uint32    `json:"mess_id"`
+	MessID   uint32    `json:"mess_id"`
 	Sender   string    `json:"sender"`
 	Receiver string    `json:"receiver"`
 	Type     string    `json:"type"`
