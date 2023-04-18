@@ -1,12 +1,15 @@
 package security
 
 import (
-	"github.com/YumikoKawaii/Yine/pkg/models"
+	"github.com/YumikoKawaii/Yine/pkg/models/relationship"
+	"github.com/YumikoKawaii/Yine/pkg/models/setting"
 	"github.com/YumikoKawaii/Yine/pkg/utils"
 )
 
-var Relationship models.Relationship
-var Setting models.Setting
+var (
+	Relationship relationship.Relationship
+	Setting      setting.Setting
+)
 
 func IsAccessable(id string, guest string) bool {
 

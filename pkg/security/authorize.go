@@ -3,10 +3,10 @@ package security
 import (
 	"net/http"
 
-	"github.com/YumikoKawaii/Yine/pkg/models"
+	"github.com/YumikoKawaii/Yine/pkg/models/session"
 )
 
-var Session models.Session
+var Session session.Session
 
 func Authorize(w http.ResponseWriter, r *http.Request) string {
 
